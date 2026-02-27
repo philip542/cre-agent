@@ -1,0 +1,35 @@
+name: Weekly CRE Scraper
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'  # Every Monday at 7am UTC (9am Tallinn time)
+  workflow_dispatch:      # Also allows manual trigger with one click
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic requests beautifulsoup4
+
+      - name: Run scraper
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scraper.py
+
+      - name: Save results back to repository
+        run: |
+          git config --global user.name "CRE Agent"
+          git config --global user.email "action@github.com"
+          git add cre_transactions.csv seen_urls.txt
+          git diff --staged --quiet || git commit -m "Weekly update: $(date +'%Y-%m-%d')"
+          git push
